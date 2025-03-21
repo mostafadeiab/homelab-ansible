@@ -1,0 +1,22 @@
+- hosts: homelab
+  gather_facts: no
+  pre_tasks:
+    - import_tasks: tasks/ssh_port_test.yml
+  become: yes
+  roles:
+    - role: system
+    - role: docker
+    - role: gpu  
+    - role: services
+    - role: geerlingguy.security
+
+- hosts: homeserver
+  gather_facts: no
+  pre_tasks:
+    - import_tasks: tasks/ssh_port_test.yml
+  become: yes
+  roles:
+    - role: system
+    - role: docker
+    - role: services
+    - role: geerlingguy.security

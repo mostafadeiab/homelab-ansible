@@ -1,0 +1,27 @@
+- name: Create gogs container
+  community.docker.docker_container:
+    name: gogs
+    image: gogs/gogs:latest
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "{{ docker_dir }}/gogs:/data"
+    networks:
+      - name: homelab
+    env:
+      TZ: "{{ timezone }}"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.gogs.entrypoints: "http"
+      traefik.http.routers.gogs.rule: "Host(`gogs.{{ domain }}`)"
+      traefik.http.middlewares.gogs-https-redirect.redirectscheme.scheme: "https"
+      traefik.http.routers.gogs.middlewares: "gogs-https-redirect"
+      traefik.http.routers.gogs-secure.entrypoints: "https"
+      traefik.http.routers.gogs-secure.rule: "Host(`gogs.{{ domain }}`)"
+      traefik.http.routers.gogs-secure.tls: "true"
+      traefik.http.routers.gogs-secure.service: "gogs"
+      traefik.http.routers.gogs-secure.middlewares: "authelia@docker"
+      traefik.http.services.gogs.loadbalancer.server.port: "3000"
+      traefik.docker.network: "homelab"
+  when: "'homelab' in group_names"

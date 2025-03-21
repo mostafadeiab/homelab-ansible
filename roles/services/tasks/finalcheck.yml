@@ -1,0 +1,63 @@
+---
+- name: Ensure correct permissions on common persistent directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    recurse: true
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ data_dir }}"
+    # Directories for Homelab services:
+    - "{{ docker_dir }}/authelia"
+    - "{{ docker_dir }}/code_server"
+    - "{{ docker_dir }}/dashdot"
+    - "{{ docker_dir }}/duplicati"
+    - "{{ docker_dir }}/guacamole"
+    - "{{ docker_dir }}/homarr"
+    - "{{ docker_dir }}/monitoring"
+    - "{{ docker_dir }}/pihole"
+    - "{{ docker_dir }}/portainer"
+    - "{{ docker_dir }}/vaultwarden"
+    - "{{ docker_dir }}/watchtower"
+    - "{{ docker_dir }}/wireguard"
+    - "{{ docker_dir }}/ollama"
+    - "{{ docker_dir }}/gogs"
+    # Directories for Homeserver services:
+    - "{{ docker_dir }}/mysql"
+    - "{{ docker_dir }}/n8n"
+    - "{{ docker_dir }}/nextcloud"
+    - "{{ docker_dir }}/syncthing"
+    - "{{ docker_dir }}/unmanic"
+    - "{{ docker_dir }}/filebrowser"
+
+- name: Check if Traefik is working properly with Authelia middleware
+  ansible.builtin.uri:
+    url: "https://wg.{{ domain }}"
+    method: GET
+    validate_certs: no
+  ignore_errors: true
+  register: traefik_authelia_check
+
+- name: Report Traefik Authelia check failure
+  ansible.builtin.debug:
+    msg: "Traefik Authelia check failed with status {{ traefik_authelia_check.status }}."
+  when: traefik_authelia_check.status is not defined or traefik_authelia_check.status != 200
+
+- name: Wait for Authelia to be ready (if required)
+  ansible.builtin.wait_for:
+    timeout: 10
+  when: traefik_authelia_check.status is not defined or traefik_authelia_check.status != 200
+
+- name: Restart Traefik container to reapply middleware settings
+  community.docker.docker_container:
+    name: traefik
+    state: started
+    restart: true
+    timeout: 300
+  when: traefik_authelia_check.status is not defined or traefik_authelia_check.status != 200
+
+- name: Reboot the server to finish setup (optional)
+  ansible.builtin.reboot:
+    msg: "Rebooting server to finish setup"

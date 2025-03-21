@@ -1,0 +1,29 @@
+- name: Create ollama container
+  community.docker.docker_container:
+    name: ollama
+    image: ollama/ollama:latest
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    # Enable GPU access – modern Docker versions support the 'gpus' parameter.
+    gpus: all
+    env:
+      TZ: "{{ timezone }}"
+    volumes:
+      - "{{ docker_dir }}/ollama/config:/config"
+    networks:
+      - name: homelab
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ollama.entrypoints: "http"
+      traefik.http.routers.ollama.rule: "Host(`ollama.{{ domain }}`)"
+      traefik.http.middlewares.ollama-https-redirect.redirectscheme.scheme: "https"
+      traefik.http.routers.ollama.middlewares: "ollama-https-redirect"
+      traefik.http.routers.ollama-secure.entrypoints: "https"
+      traefik.http.routers.ollama-secure.rule: "Host(`ollama.{{ domain }}`)"
+      traefik.http.routers.ollama-secure.tls: "true"
+      traefik.http.routers.ollama-secure.service: "ollama"
+      traefik.http.routers.ollama-secure.middlewares: "authelia@docker"
+      traefik.http.services.ollama.loadbalancer.server.port: "8000"
+      traefik.docker.network: "homelab"
+  when: "'homelab' in group_names"

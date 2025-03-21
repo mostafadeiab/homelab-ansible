@@ -1,0 +1,43 @@
+- name: Deploy traefik with docker container
+  community.docker.docker_container:
+    name: traefik
+    image: traefik:latest
+    restart_policy: unless-stopped
+    state: started
+    security_opts:
+      - no-new-privileges:true
+    networks:
+      - name: homelab
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "{{ docker_dir }}/traefik/data/acme.json:/acme.json"
+      - "{{ docker_dir }}/traefik/data/traefik.yml:/traefik.yml:ro"
+    env:
+      CF_API_EMAIL: "{{ cloudflare_email }}"
+      CF_API_KEY: "{{ cloudflare_api_key }}"
+    labels:
+      traefik.enable: "true"
+      # HTTP router for Traefik dashboard
+      traefik.http.routers.traefik.entrypoints: "http"
+      traefik.http.routers.traefik.rule: "Host(`traefik.{{ domain }}`)"
+      # Configure forward authentication via Authelia instead of basic auth.
+      traefik.http.middlewares.traefik-auth.forwardauth.address: "http://authelia:9091/api/verify?rd=https://traefik.{{ domain }}"
+      traefik.http.middlewares.traefik-auth.forwardauth.trustForwardHeader: "true"
+      # Redirect HTTP to HTTPS
+      traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
+      traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto: "https"
+      # Attach the redirect middleware to the HTTP router
+      traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
+      # HTTPS secure router for Traefik dashboard
+      traefik.http.routers.traefik-secure.entrypoints: "https"
+      traefik.http.routers.traefik-secure.rule: "Host(`traefik.{{ domain }}`)"
+      # Use the forward-auth middleware (named "traefik-auth") for secure access
+      traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
+      traefik.http.routers.traefik-secure.tls: "true"
+      traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"
+      traefik.http.routers.traefik-secure.tls.domains[0].main: "{{ domain }}"
+      traefik.http.routers.traefik-secure.tls.domains[0].sans: "*.{{ domain }}"
+      traefik.http.routers.traefik-secure.service: "api@internal"

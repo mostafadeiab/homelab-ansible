@@ -1,0 +1,20 @@
+- name: Create MySQL container
+  community.docker.docker_container:
+    name: mysql
+    image: mysql:latest
+    env:
+      PUID: "{{ puid }}"
+      PGID: "{{ pgid }}"
+      MYSQL_ROOT_PASSWORD: "{{ mysql_password }}"
+      MYSQL_DATABASE: "admin"
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "{{ mysql_password }}"
+    state: started
+    networks:
+      - name: homeserver
+    volumes:
+      - "{{ docker_dir }}/mysql/config:/etc/mysql/conf.d"
+      - "{{ data_dir }}/mysql/database:/var/lib/mysql"
+      - "{{ data_dir }}/mysql/dbbackups:/var/backups/mysql"
+    restart_policy: unless-stopped
+  when: "'homeserver' in group_names"

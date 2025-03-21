@@ -1,0 +1,29 @@
+- name: Create watchtower container on homelab
+  community.docker.docker_container:
+    name: watchtower
+    image: containrrr/watchtower:latest
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    env:
+      WATCHTOWER_CLEANUP: "true"
+    networks:
+      - name: homelab
+  when: "'homelab' in group_names"
+  
+- name: Create watchtower container on homeserver
+  community.docker.docker_container:
+    name: watchtower
+    image: containrrr/watchtower:latest
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    env:
+      WATCHTOWER_CLEANUP: "true"
+    networks:
+      - name: homeserver
+  when: "'homeserver' in group_names"

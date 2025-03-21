@@ -1,0 +1,37 @@
+---
+# Deploy services on the homelab (public‑facing) machine.
+- name: Deploy homelab services
+  ansible.builtin.include_tasks: "roles/services/tasks/{{ item }}.yml"
+  loop:
+    - authelia
+    - traefik
+    - code_server
+    - dashdot
+    - duplicati
+    - guacamole
+    - homarr
+    - monitoring
+    - pihole
+    - portainer
+    - vaultwarden
+    - watchtower
+    - wireguard
+    - ollama
+    - gogs
+  when: "'homelab' in group_names"
+
+# Deploy services on the homeserver (storage‑focused) machine.
+- name: Deploy homeserver services
+  ansible.builtin.include_tasks: "roles/services/tasks/{{ item }}.yml"
+  loop:
+    - mysql
+    - n8n
+    - nextcloud
+    - syncthing
+    - unmanic
+    - filebrowser
+  when: "'homeserver' in group_names"
+
+# Finally run post-deployment checks.
+- name: Execute final check tasks
+  ansible.builtin.include_tasks: "finalcheck.yml"

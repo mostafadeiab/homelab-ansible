@@ -1,0 +1,75 @@
+---
+# Set a fact for the sudo group name (defaults to "sudo")
+- name: Set the name of a sudo group
+  set_fact:
+    sudo_group: sudo
+
+# Ensure that required user groups exist
+- name: Ensure the necessary groups exist
+  group:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ username }}"
+    - docker
+
+# Create the primary login user. The password is hashed using Sha512.
+- name: Create a login user
+  user:
+    name: "{{ username }}"
+    password: "{{ user_password | password_hash('sha512') }}"
+    groups:
+      - "{{ sudo_group }}"
+      - docker
+      - users
+    state: present
+    append: true
+
+# Ensure correct permissions on the user's home directory
+- name: Chmod the user home directory
+  file:
+    path: "/home/{{ username }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    recurse: yes
+
+# Allow the sudo group passwordless sudo in /etc/sudoers
+- name: Allow '{{ sudo_group }}' group to have passwordless sudo
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: "^%{{ sudo_group }}"
+    line: "%{{ sudo_group }} ALL=(ALL) NOPASSWD: ALL"
+    validate: "/usr/sbin/visudo -cf %s"
+
+# Set the default shell (which might be different per host, based on your vars)
+- name: Set the default shell for the user
+  user:
+    name: "{{ username }}"
+    shell: "{{ shell }}"
+
+# If the shell is fish, disable the fish greeting for a cleaner login
+- name: Disable fish greeting
+  lineinfile:
+    path: "/home/{{ username }}/.config/fish/fish_variables"
+    state: present
+    regexp: "fish_greeting:.+"
+    line: "SETUVAR fish_greeting:"
+    create: yes
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: '0644'
+  when: "'fish' in shell"
+
+# Suppress login messages by creating a .hushlogin file
+- name: Suppress login messages
+  file:
+    path: "/home/{{ username }}/.hushlogin"
+    mode: '0644'
+    state: touch
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    modification_time: preserve
+    access_time: preserve

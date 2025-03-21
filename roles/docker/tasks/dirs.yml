@@ -1,0 +1,65 @@
+---
+# Create the main Docker directory (required on both machines)
+- name: Create Docker directory
+  ansible.builtin.file:
+    path: "{{ docker_dir }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+
+# Create the data directories (if these are needed for persistence on both machines)
+- name: Create data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ data_dir }}"
+    - "{{ data_dir }}/media"
+    - "{{ data_dir }}/media/movies"
+    - "{{ data_dir }}/media/tv"
+    - "{{ data_dir }}/media/torrents"
+
+# Create app directories for the public-facing machine (homelab)
+- name: Create public app directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ docker_dir }}/authelia"
+    - "{{ docker_dir }}/code_server"
+    - "{{ docker_dir }}/dashdot"
+    - "{{ docker_dir }}/gogs"
+    - "{{ docker_dir }}/guacamole"
+    - "{{ docker_dir }}/portainer"
+    - "{{ docker_dir }}/uptime_kuma"
+    - "{{ docker_dir }}/traefik"
+    - "{{ docker_dir }}/vaultwarden"
+    - "{{ docker_dir }}/wireguard"
+    - "{{ docker_dir }}/ollama"
+  when: "'homelab' in group_names"
+
+# Create app directories for the storage-focused machine (homeserver)
+- name: Create storage app directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ docker_dir }}/mysql"
+    - "{{ docker_dir }}/n8n"
+    - "{{ docker_dir }}/nextcloud"
+    - "{{ docker_dir }}/pihole"
+    - "{{ docker_dir }}/filebrowser"
+    - "{{ docker_dir }}/syncthing"
+    - "{{ docker_dir }}/watchtower"
+    - "{{ docker_dir }}/monitoring"
+  when: "'homeserver' in group_names"

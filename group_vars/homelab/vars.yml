@@ -1,0 +1,86 @@
+# Public-facing homelab-specific settings
+username: "user"
+
+# Directory and GPU settings
+docker_dir: "/var/lib/docker"
+data_dir: "/mnt/appdata"
+gpu_enabled: true
+nvidia_driver_package: "nvidia-driver-525"
+nvidia_docker_package: "nvidia-docker2"
+
+# Public-facing IP address for DNS routing
+ip_address: "<your homelab public IP address>"
+
+# Services on homelab
+public_services:
+  traefik:
+    enabled: true
+    tls_provider: "cloudflare"
+    domain: "{{ domain }}"
+    entrypoints: ["http", "https"]
+  authelia:
+    enabled: true
+    jwt_secret: "{{ jwt_secret }}"
+    totp_issuer: "{{ domain }}"
+    session_secret: "{{ authelia_session_secret }}"
+  codeserver:
+    enabled: true
+    port: 8080
+    data_dir: "{{ docker_dir }}/codeserver"
+  dashdot:
+    enabled: true
+    port: 3001
+  guacamole:
+    enabled: true
+  homarr:
+    enabled: true
+    icons_dir: "{{ docker_dir }}/homarr/icons"
+    configs_dir: "{{ docker_dir }}/homarr/configs"
+  monitoring:
+    enabled: true
+    grafana:
+      enabled: true
+      port: 3000
+      admin_user: "admin"
+      admin_password: "{{ grafana_password }}"
+    prometheus:
+      enabled: true
+      scrape_interval: 15s
+  pihole:
+    enabled: true
+    password: "{{ pihole_password }}"
+    upstream_dns:
+      - "1.1.1.1"
+      - "8.8.8.8"
+  portainer:
+    enabled: true
+  uptime_kuma:
+    enabled: true
+    monitoring_interval: 30  # In seconds
+  vaultwarden:
+    enabled: true
+  watchtower:
+    enabled: true
+  wireguard:
+    enabled: true
+    endpoint: "{{ ip_address }}"
+    allowed_ips: "0.0.0.0/0"  # Adjust to your configuration
+  ollama:
+    enabled: true
+    gpus: all
+  gogs:
+    enabled: true
+    data_dir: "/mnt/nfs/shared/gogs"  # Shared NFS directory on the homelab
+  duplicati:
+    enabled: true
+    backup_paths:
+      - "/var/lib/docker"
+      - "/etc"
+      - "/mnt/appdata"
+      - "/mnt/nfs/shared"
+
+# Traefik authentication middleware linked to Authelia
+auth_middleware:
+  authelia:
+    address: "http://authelia:9091/api/verify"
+    trustForwardHeader: true

@@ -1,0 +1,55 @@
+# Storage-focused homeserver-specific settings
+username: "user"
+
+# Directory configuration
+docker_dir: "/mnt/db"
+data_dir: "/mnt/storage"
+
+# Local IP address for internal use only
+ip_address: "<your homeserver local IP address>"
+
+# Services on homeserver
+storage_services:
+  mysql:
+    enabled: true
+    password: "{{ mysql_password }}"
+    data_dir: "{{ data_dir }}/mysql"
+  n8n:
+    enabled: true
+    data_dir: "{{ data_dir }}/n8n"
+  nextcloud:
+    enabled: true
+    data_dir: "{{ data_dir }}/nextcloud"
+    trusted_domains:
+      - "{{ ip_address }}"
+      - "nextcloud.{{ domain }}"
+  syncthing:
+    enabled: true
+    data_dir: "{{ data_dir }}/syncthing"
+  filebrowser:
+    enabled: true
+    data_dir: "{{ data_dir }}/filebrowser"
+  unmanic:
+    enabled: true
+    transcode_dir: "{{ docker_dir }}/unmanic/transcode"
+    library_dirs:
+      - "{{ data_dir }}/media/movies"
+      - "{{ data_dir }}/media/tv"
+  monitoring:
+    enabled: true
+    grafana:
+      enabled: true
+      port: 3000
+      admin_user: "admin"
+      admin_password: "{{ grafana_password }}"
+    prometheus:
+      enabled: true
+      scrape_interval: 15s
+  watchtower:
+    enabled: true
+
+# Shared NFS settings for the homelab
+nfs:
+  export_dir: "/srv/nfs/shared"
+  clients:
+    - homelab

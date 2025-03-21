@@ -1,0 +1,31 @@
+---
+- name: Install NVIDIA GPU driver package
+  apt:
+    name: "{{ nvidia_driver_package }}"
+    state: present
+    update_cache: yes
+  when: gpu_enabled | default(false)
+
+- name: Add NVIDIA Docker repository GPG key
+  apt_key:
+    url: https://nvidia.github.io/nvidia-docker/gpgkey
+    state: present
+  when: gpu_enabled | default(false)
+
+- name: Add NVIDIA Docker repository
+  apt_repository:
+    repo: "deb https://nvidia.github.io/nvidia-docker/ubuntu{{ ansible_distribution_release }}/$(ARCH)/"
+    state: present
+  when: gpu_enabled | default(false)
+
+- name: Install NVIDIA Docker package
+  apt:
+    name: "{{ nvidia_docker_package }}"
+    state: present
+  when: gpu_enabled | default(false)
+
+- name: Restart Docker service to load the NVIDIA runtime
+  service:
+    name: docker
+    state: restarted
+  when: gpu_enabled | default(false)
